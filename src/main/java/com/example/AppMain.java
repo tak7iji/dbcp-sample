@@ -5,8 +5,8 @@ import java.sql.SQLException;
 import java.util.Properties;
 
 import javax.sql.DataSource;
-import org.apache.tomcat.dbcp.dbcp2.BasicDataSource;
-import org.apache.tomcat.dbcp.dbcp2.BasicDataSourceFactory;
+import org.apache.commons.dbcp2.BasicDataSource;
+import org.apache.commons.dbcp2.BasicDataSourceFactory;
 
 public class AppMain {
 
@@ -38,13 +38,10 @@ public class AppMain {
         ds.setMaxTotal(10);
         ds.setMinIdle(5);
         ds.setNumTestsPerEvictionRun(2);
-        // ds.setTestOnBorrow(true);
         ds.setTestWhileIdle(true);
         ds.setTimeBetweenEvictionRunsMillis(1000);
         ds.setMinEvictableIdleTimeMillis(100);
         ds.setValidationQuery("SELECT 1");
-        // ds.setRemoveAbandonedOnBorrow(true);
-        // ds.setLogAbandoned(true);
         ds.setPoolPreparedStatements(true);
         return ds;
     }

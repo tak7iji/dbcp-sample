@@ -63,6 +63,8 @@ public class GenericKeyedObjectPoolConfig<T> extends BaseObjectPoolConfig<T> {
 
     private int maxTotal = DEFAULT_MAX_TOTAL;
 
+    private boolean useEvictor = true;
+
     /**
      * Create a new configuration with default settings.
      */
@@ -195,4 +197,12 @@ public class GenericKeyedObjectPoolConfig<T> extends BaseObjectPoolConfig<T> {
         builder.append(", maxTotal=");
         builder.append(maxTotal);
     }
+
+    public boolean getUseEvictor() {
+        return this.useEvictor;
+    }
+
+	public void setUseEvictor(boolean useEvictor) {
+        this.useEvictor = useEvictor;
+	}
 }

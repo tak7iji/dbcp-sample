@@ -488,6 +488,7 @@ public abstract class BaseGenericObjectPool<T> extends BaseObject {
     public final void setTimeBetweenEvictionRunsMillis(
             final long timeBetweenEvictionRunsMillis) {
         this.timeBetweenEvictionRunsMillis = timeBetweenEvictionRunsMillis;
+        System.out.println("timeBetweenEvictionRunsMillis: "+timeBetweenEvictionRunsMillis);
         startEvictor(timeBetweenEvictionRunsMillis);
     }
 

@@ -1,5 +1,8 @@
 package com.example;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
+import java.lang.management.ThreadMXBean;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Properties;
@@ -18,7 +21,7 @@ public class AppMain {
 
             System.out.println("Creating connection.");
             conn = dataSource.getConnection();
-            for(int i=0; i< 10; i++) {
+            for(int i=0; i< 40; i++) {
                 printDataSourceStats(dataSource);
                 Thread.sleep(1000);
             }
@@ -36,15 +39,12 @@ public class AppMain {
         ds.setInitialSize(10);
         ds.setMaxIdle(10);
         ds.setMaxTotal(10);
-        ds.setMinIdle(5);
+        ds.setMinIdle(0);
         ds.setNumTestsPerEvictionRun(2);
-        // ds.setTestOnBorrow(true);
         ds.setTestWhileIdle(true);
         ds.setTimeBetweenEvictionRunsMillis(1000);
         ds.setMinEvictableIdleTimeMillis(100);
         ds.setValidationQuery("SELECT 1");
-        // ds.setRemoveAbandonedOnBorrow(true);
-        // ds.setLogAbandoned(true);
         ds.setPoolPreparedStatements(true);
         return ds;
     }
@@ -53,6 +53,15 @@ public class AppMain {
         BasicDataSource bds = (BasicDataSource) ds;
         System.out.println("NumActive: " + bds.getNumActive());
         System.out.println("NumIdle: " + bds.getNumIdle());
+        
+        ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
+        long[] ids = threadBean.getAllThreadIds();
+        ThreadInfo[] threads = threadBean.getThreadInfo(ids, 0);
+        for (ThreadInfo info: threads) {
+            if(info != null && info.getThreadName().toLowerCase().contains("evict")) {
+                System.out.println(info.getThreadName() + ":" + info.getThreadId() + " is alive.");
+            }
+        }        
     }
 
     public static void shutdownDataSource(DataSource ds) throws SQLException {

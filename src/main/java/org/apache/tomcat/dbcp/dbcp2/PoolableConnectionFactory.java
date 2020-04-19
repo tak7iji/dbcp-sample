@@ -380,6 +380,8 @@ public class PoolableConnectionFactory implements PooledObjectFactory<PoolableCo
             config.setMaxWaitMillis(0);
             config.setMaxIdlePerKey(1);
             config.setMaxTotal(maxOpenPreparedStatements);
+            config.setTimeBetweenEvictionRunsMillis(-1);
+            config.setUseEvictor(false);
             if (dataSourceJmxObjectName != null) {
                 final StringBuilder base = new StringBuilder(dataSourceJmxObjectName.toString());
                 base.append(Constants.JMX_CONNECTION_BASE_EXT);

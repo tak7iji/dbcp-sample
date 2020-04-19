@@ -99,6 +99,12 @@ class EvictionTimer {
             evictor.cancel();
         }
         if (executor != null && executor.getQueue().isEmpty()) {
+            System.out.println("EvictionTimer canceled.");
+            StackTraceElement[] ste = new Throwable().getStackTrace();
+            for (int i = 0; i < ste.length; i++) {
+                System.out.println(ste[i]);
+            }
+    
             executor.shutdown();
             try {
                 executor.awaitTermination(timeout, unit);

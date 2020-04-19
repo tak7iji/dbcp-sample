@@ -84,9 +84,12 @@ import org.apache.tomcat.dbcp.pool2.PooledObjectState;
 public class GenericKeyedObjectPool<K, T> extends BaseGenericObjectPool<T>
         implements KeyedObjectPool<K, T>, GenericKeyedObjectPoolMXBean<K> {
 
+    private boolean useEvictor;
+
     /**
      * Create a new <code>GenericKeyedObjectPool</code> using defaults from
      * {@link GenericKeyedObjectPoolConfig}.
+     * 
      * @param factory the factory to be used to create entries
      */
     public GenericKeyedObjectPool(final KeyedPooledObjectFactory<K,T> factory) {
@@ -241,16 +244,27 @@ public class GenericKeyedObjectPool<K, T> extends BaseGenericObjectPool<T>
      * @see GenericKeyedObjectPoolConfig
      */
     public void setConfig(final GenericKeyedObjectPoolConfig<T> conf) {
-        super.setConfig(conf);
+        setUseEvictor(conf.getUseEvictor());
+        if(getUseEvictor()) {
+            super.setConfig(conf);
+        } else {
+            setMaxWaitMillis(conf.getMaxWaitMillis());
+            setBlockWhenExhausted(conf.getBlockWhenExhausted());
+        }
+
         setMaxIdlePerKey(conf.getMaxIdlePerKey());
         setMaxTotalPerKey(conf.getMaxTotalPerKey());
         setMaxTotal(conf.getMaxTotal());
         setMinIdlePerKey(conf.getMinIdlePerKey());
     }
 
+    private void setUseEvictor(boolean useEvictor) {
+        this.useEvictor = useEvictor;
+    }
+
     /**
-     * Obtain a reference to the factory used to create, destroy and validate
-     * the objects used by this pool.
+     * Obtain a reference to the factory used to create, destroy and validate the
+     * objects used by this pool.
      *
      * @return the factory
      */
@@ -676,6 +690,17 @@ public class GenericKeyedObjectPool<K, T> extends BaseGenericObjectPool<T>
         return objectDeque != null ? objectDeque.getIdleObjects().size() : 0;
     }
 
+    @Override
+    void stopEvictor() {
+        if(getUseEvictor()) {
+            System.out.println("stopEvictor");
+            startEvictor(-1L);
+        }
+    }
+
+    private boolean getUseEvictor() {
+        return this.useEvictor;
+    }
 
     /**
      * Closes the keyed object pool. Once the pool is closed,

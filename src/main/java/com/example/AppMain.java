@@ -5,23 +5,22 @@ import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.Properties;
 
 import javax.sql.DataSource;
 import org.apache.commons.dbcp2.BasicDataSource;
-import org.apache.commons.dbcp2.BasicDataSourceFactory;
 
 public class AppMain {
 
     public static void main(String[] args) {
         Connection conn = null;
+        boolean flag = (args.length > 0 && !args[0].isEmpty()) ? Boolean.getBoolean(args[0]) : true;
 
         try {
-            DataSource dataSource = setupDataSource("jdbc:h2:~/test");
+            DataSource dataSource = setupDataSource("jdbc:h2:~/test", flag);
 
             System.out.println("Creating connection.");
             conn = dataSource.getConnection();
-            for(int i=0; i< 10; i++) {
+            for(int i=0; i< 20; i++) {
                 printDataSourceStats(dataSource);
                 Thread.sleep(1000);
             }
@@ -32,7 +31,7 @@ public class AppMain {
         }
     }
 
-    public static DataSource setupDataSource(String connectURI) throws Exception {
+    public static DataSource setupDataSource(String connectURI, boolean flag) throws Exception {
         BasicDataSource ds = new BasicDataSource();
         ds.setDriverClassName("org.h2.Driver");
         ds.setUrl(connectURI);
@@ -45,7 +44,7 @@ public class AppMain {
         ds.setTimeBetweenEvictionRunsMillis(1000);
         ds.setMinEvictableIdleTimeMillis(100);
         ds.setValidationQuery("SELECT 1");
-        ds.setPoolPreparedStatements(true);
+        ds.setPoolPreparedStatements(flag);
         return ds;
     }
 

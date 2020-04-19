@@ -58,7 +58,7 @@ public class AppMain {
         long[] ids = threadBean.getAllThreadIds();
         ThreadInfo[] threads = threadBean.getThreadInfo(ids, 0);
         for (ThreadInfo info: threads) {
-            if(info != null && info.getThreadName().contains("evict")) {
+            if(info != null && info.getThreadName().toLowerCase().contains("evict")) {
                 System.out.println(info.getThreadName() + ":" + info.getThreadId() + " is alive.");
             }
         }        

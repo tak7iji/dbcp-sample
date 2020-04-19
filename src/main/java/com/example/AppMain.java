@@ -1,5 +1,8 @@
 package com.example;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
+import java.lang.management.ThreadMXBean;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Properties;
@@ -30,7 +33,7 @@ public class AppMain {
     }
 
     public static DataSource setupDataSource(String connectURI) throws Exception {
-        BasicDataSource ds = BasicDataSourceFactory.createDataSource(new Properties());
+        BasicDataSource ds = new BasicDataSource();
         ds.setDriverClassName("org.h2.Driver");
         ds.setUrl(connectURI);
         ds.setInitialSize(10);
@@ -50,6 +53,15 @@ public class AppMain {
         BasicDataSource bds = (BasicDataSource) ds;
         System.out.println("NumActive: " + bds.getNumActive());
         System.out.println("NumIdle: " + bds.getNumIdle());
+
+        ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
+        long[] ids = threadBean.getAllThreadIds();
+        ThreadInfo[] threads = threadBean.getThreadInfo(ids, 0);
+        for (ThreadInfo info: threads) {
+            if(info != null && info.getThreadName().contains("evict")) {
+                System.out.println(info.getThreadName() + ":" + info.getThreadId() + " is alive.");
+            }
+        }        
     }
 
     public static void shutdownDataSource(DataSource ds) throws SQLException {

@@ -39,7 +39,7 @@ public class AppMain {
         ds.setInitialSize(10);
         ds.setMaxIdle(10);
         ds.setMaxTotal(10);
-        ds.setMinIdle(0);
+        ds.setMinIdle(5);
         ds.setNumTestsPerEvictionRun(2);
         ds.setTestWhileIdle(true);
         ds.setTimeBetweenEvictionRunsMillis(1000);

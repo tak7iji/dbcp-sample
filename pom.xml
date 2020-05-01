@@ -51,7 +51,7 @@
           </descriptorRefs>
           <archive>
             <manifest>
-              <mainClass>com.example.AppMain</mainClass>
+              <mainClass>org.example.TestBasicDataSource2</mainClass>
             </manifest>
           </archive>
         </configuration>

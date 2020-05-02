@@ -1,32 +1,41 @@
 package org.example;
 
 import java.lang.management.ManagementFactory;
-import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.sql.Connection;
-import java.util.Arrays;
 
 import org.apache.commons.dbcp2.BasicDataSource;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import static org.assertj.core.api.Assertions.*;
 
 public class TestBasicDataSource2 {
+    Logger logger = LogManager.getLogger(TestBasicDataSource2.class);
     protected BasicDataSource ds = null;
+    protected ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         TestBasicDataSource2 test = new TestBasicDataSource2();
         test.setUp();
+        test.testEvicter1();
+        test.tearDown();
+
+        test.setUp();
+        test.testEvicter2();
+        test.tearDown();
     }
 
-    public void setUp() {
-        try {
-            ds = createDataSource();
-            ds.setDriverClassName("org.h2.Driver");
-            ds.setUrl("jdbc:h2:~/test");
-            ds.setValidationQuery("SELECT 1");
+    public void setUp() throws Exception {
+        ds = createDataSource();
+        ds.setDriverClassName("org.h2.Driver");
+        ds.setUrl("jdbc:h2:~/test");
+        ds.setValidationQuery("SELECT 1");
+    }
 
-            testEvicter1();
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
+    public void tearDown() throws Exception {
+        ds.close();
+        ds = null;
     }
 
     protected BasicDataSource createDataSource() throws Exception {
@@ -37,34 +46,50 @@ public class TestBasicDataSource2 {
         return ds.getConnection();
     }
 
-    protected void testEvicter1() throws Exception {
+    protected void setAdditionalProps() {
         ds.setInitialSize(10);
         ds.setMaxIdle(10);
         ds.setMaxTotal(10);
         ds.setMinIdle(5);
-        ds.setNumTestsPerEvictionRun(2);
+        ds.setNumTestsPerEvictionRun(1);
         ds.setTestWhileIdle(true);
         ds.setTimeBetweenEvictionRunsMillis(1000);
         ds.setMinEvictableIdleTimeMillis(100);
-        ds.setPoolPreparedStatements(Boolean.TRUE);
+    }
+
+    protected void testEvicter1() throws Exception {
+        setAdditionalProps();
+        ds.setPoolPreparedStatements(Boolean.FALSE);
 
         try (final Connection conn = getConnection()) {
-
-            for(int i=0; i< 20; i++) {
-                if(!isEvictorAlive()) {
-                    System.out.println("Evicter is disappeared");
-                    break;
-                }
-                Thread.sleep(1000);
-            }
-            System.out.println("Num idle="+ds.getNumIdle());
+            logger.info("Start test(poolPreparedStatements = false)");
+            checkIfEvictorAlive();
+            logger.info("End with numIdle="+ds.getNumIdle());
         }
     }
 
-    protected boolean isEvictorAlive() {
-        ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
-        long[] ids = threadBean.getAllThreadIds();
-        ThreadInfo[] threads = threadBean.getThreadInfo(ids, 0);
-        return Arrays.stream(threads).anyMatch(i -> i.getThreadName().toLowerCase().contains("evict"));
+    protected void testEvicter2() throws Exception {
+        setAdditionalProps();
+        ds.setPoolPreparedStatements(Boolean.TRUE);
+
+        try (final Connection conn = getConnection()) {
+            logger.info("Start test(poolPreparedStatements = true)");
+            checkIfEvictorAlive();
+            logger.info("End with numIdle="+ds.getNumIdle());
+        }
+    }
+
+    protected void checkIfEvictorAlive() {
+        try {
+            for(int i=0; i< 20; i++) {
+                assertThat(threadBean.getThreadInfo(threadBean.getAllThreadIds(), 0))
+                    .extracting(t -> t.getThreadName().toLowerCase())
+                    .anyMatch(s->s.contains("evict"));
+                if (ds.getNumIdle() <= 5) break;
+                Thread.sleep(1000);
+            }
+        } catch (Exception ex){
+            ex.printStackTrace();
+        }
     }
 }

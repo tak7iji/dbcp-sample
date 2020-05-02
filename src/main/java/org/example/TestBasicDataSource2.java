@@ -59,35 +59,28 @@ public class TestBasicDataSource2 {
 
     protected void testEvicter1() throws Exception {
         setAdditionalProps();
-        ds.setPoolPreparedStatements(Boolean.FALSE);
-
-        try (final Connection conn = getConnection()) {
-            logger.info("Start test(poolPreparedStatements = false)");
-            checkIfEvictorAlive();
-            logger.info("End with numIdle="+ds.getNumIdle());
-        }
+        ds.setPoolPreparedStatements(false);
+        checkIfEvictorAlive(false);
     }
 
     protected void testEvicter2() throws Exception {
         setAdditionalProps();
-        ds.setPoolPreparedStatements(Boolean.TRUE);
-
-        try (final Connection conn = getConnection()) {
-            logger.info("Start test(poolPreparedStatements = true)");
-            checkIfEvictorAlive();
-            logger.info("End with numIdle="+ds.getNumIdle());
-        }
+        ds.setPoolPreparedStatements(true);
+        checkIfEvictorAlive(true);
     }
 
-    protected void checkIfEvictorAlive() {
-        try {
+    protected void checkIfEvictorAlive(boolean flag) {
+        try (final Connection conn = getConnection()) {
+            logger.info("Start test(poolPreparedStatements = {}})", flag);
             for(int i=0; i< 20; i++) {
                 assertThat(threadBean.getThreadInfo(threadBean.getAllThreadIds(), 0))
+                    .as("EvictionTimer thread was destroyed with numIdle=%d(expected: less or equal than %d)", ds.getNumIdle(), ds.getMinIdle())
                     .extracting(t -> t.getThreadName().toLowerCase())
                     .anyMatch(s->s.contains("evict"));
-                if (ds.getNumIdle() <= 5) break;
+                if (ds.getNumIdle() <= ds.getMinIdle()) break;
                 Thread.sleep(1000);
             }
+            logger.info("End test(numIdle={})",ds.getNumIdle());
         } catch (Exception ex){
             ex.printStackTrace();
         }

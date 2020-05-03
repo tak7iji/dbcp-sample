@@ -1,0 +1,155 @@
+diff --git a/.gitignore b/.gitignore
+index bfb50d18..d3b902c9 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -21,3 +21,4 @@ site-content
+ .idea
+ *.iml
+ .nbproject
++.vscode/
+\ No newline at end of file
+diff --git a/pom.xml b/pom.xml
+index 5d09ebde..f0766ba8 100644
+--- a/pom.xml
++++ b/pom.xml
+@@ -223,6 +223,13 @@
+       <scope>test</scope>
+     </dependency>
+ 
++    <dependency>
++      <groupId>org.assertj</groupId>
++      <artifactId>assertj-core</artifactId>
++      <version>3.15.0</version>
++      <scope>test</scope>
++    </dependency>
++
+     <!-- for testing of managed connections -->
+     <dependency>
+       <groupId>org.apache.geronimo.modules</groupId>
+diff --git a/src/test/java/org/apache/commons/dbcp2/TestBasicDataSource2.java b/src/test/java/org/apache/commons/dbcp2/TestBasicDataSource2.java
+new file mode 100644
+index 00000000..fdb35368
+--- /dev/null
++++ b/src/test/java/org/apache/commons/dbcp2/TestBasicDataSource2.java
+@@ -0,0 +1,120 @@
++/*
++ * Licensed to the Apache Software Foundation (ASF) under one or more
++ * contributor license agreements.  See the NOTICE file distributed with
++ * this work for additional information regarding copyright ownership.
++ * The ASF licenses this file to You under the Apache License, Version 2.0
++ * (the "License"); you may not use this file except in compliance with
++ * the License.  You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++ package org.apache.commons.dbcp2;
++
++import java.lang.management.ManagementFactory;
++import java.lang.management.ThreadMXBean;
++import java.sql.Connection;
++import java.util.Arrays;
++
++import org.apache.commons.logging.LogFactory;
++import org.junit.jupiter.api.AfterEach;
++import org.junit.jupiter.api.BeforeAll;
++import org.junit.jupiter.api.BeforeEach;
++import org.junit.jupiter.api.Test;
++
++import static org.assertj.core.api.Assertions.*;
++
++public class TestBasicDataSource2 extends TestConnectionPool {
++    @Override
++    protected Connection getConnection() throws Exception {
++        return ds.getConnection();
++    }
++
++    protected BasicDataSource ds = null;
++    private static final String CATALOG = "test catalog";
++
++    @BeforeAll
++    public static void setUpClass() {
++        // register a custom logger which supports inspection of the log messages
++        LogFactory.getFactory().setAttribute("org.apache.commons.logging.Log", "org.apache.commons.dbcp2.StackMessageLog");
++    }
++
++    @BeforeEach
++    public void setUp() throws Exception {
++        ds = createDataSource();
++        ds.setDriverClassName("org.apache.commons.dbcp2.TesterDriver");
++        ds.setUrl("jdbc:apache:commons:testdriver");
++        ds.setMaxTotal(getMaxTotal());
++        ds.setMaxWaitMillis(getMaxWaitMillis());
++        ds.setDefaultAutoCommit(Boolean.TRUE);
++        ds.setDefaultReadOnly(Boolean.FALSE);
++        ds.setDefaultTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
++        ds.setDefaultCatalog(CATALOG);
++        ds.setUsername("userName");
++        ds.setPassword("password");
++        ds.setValidationQuery("SELECT DUMMY FROM DUAL");
++        ds.setConnectionInitSqls(Arrays.asList(new String[] { "SELECT 1", "SELECT 2"}));
++        ds.setDriverClassLoader(new TesterClassLoader());
++        ds.setJmxName("org.apache.commons.dbcp2:name=test");
++    }
++
++    @Override
++    @AfterEach
++    public void tearDown() throws Exception {
++        super.tearDown();
++        ds.close();
++        ds = null;
++    }
++
++    protected BasicDataSource createDataSource() throws Exception {
++        return new BasicDataSource();
++    }
++
++    protected ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
++
++    protected void setAdditionalProps() {
++        ds.setInitialSize(10);
++        ds.setMaxIdle(10);
++        ds.setMaxTotal(10);
++        ds.setMinIdle(5);
++        ds.setNumTestsPerEvictionRun(1);
++        ds.setTestWhileIdle(true);
++        ds.setTimeBetweenEvictionRunsMillis(1000);
++        ds.setMinEvictableIdleTimeMillis(100);
++    }
++
++    @Test
++    protected void testEvicter1() throws Exception {
++        setAdditionalProps();
++        ds.setPoolPreparedStatements(false);
++        checkIfEvictorAlive(false);
++    }
++
++    @Test
++    protected void testEvicter2() throws Exception {
++        setAdditionalProps();
++        ds.setPoolPreparedStatements(true);
++        checkIfEvictorAlive(true);
++    }
++
++    protected void checkIfEvictorAlive(boolean flag) {
++        try (final Connection conn = getConnection()) {
++            for(int i=0; i< 20; i++) {
++                assertThat(threadBean.getThreadInfo(threadBean.getAllThreadIds(), 0))
++                    .as("EvictionTimer thread was destroyed with numIdle=%d(expected: less or equal than %d)", ds.getNumIdle(), ds.getMinIdle())
++                    .extracting(t -> t.getThreadName().toLowerCase())
++                    .anyMatch(s->s.contains("evict"));
++                if (ds.getNumIdle() <= ds.getMinIdle()) break;
++                Thread.sleep(1000);
++            }
++        } catch (Exception ex){
++            ex.printStackTrace();
++        }
++    }
++}
+\ No newline at end of file

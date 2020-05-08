@@ -1,4 +1,4 @@
-1. apply this testcase.patch to commons-dbcp source
+1. apply testcase.patch file to commons-dbcp source
 2. execute following command, and check error message 
   - command
     ```

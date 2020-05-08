@@ -18,3 +18,6 @@
         "main"]>
     to match given predicate but none did.
     ```
+
+  testEvicter1: poolPreparedStatements = false
+  testEvicter2: poolPreparedStatements = true

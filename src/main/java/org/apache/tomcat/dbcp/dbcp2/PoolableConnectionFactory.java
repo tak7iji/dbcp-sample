@@ -394,6 +394,7 @@ public class PoolableConnectionFactory implements PooledObjectFactory<PoolableCo
                     poolingConn, config);
             poolingConn.setStatementPool(stmtPool);
             poolingConn.setCacheState(cacheState);
+            System.out.println(config.toString());
         }
 
         // Register this connection with JMX

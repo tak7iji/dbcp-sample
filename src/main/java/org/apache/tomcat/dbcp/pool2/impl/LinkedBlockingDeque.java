@@ -34,7 +34,6 @@ import java.util.concurrent.locks.Condition;
  * is equal to {@link Integer#MAX_VALUE}.  Linked nodes are
  * dynamically created upon each insertion unless this would bring the
  * deque above capacity.
- * </p>
  *
  * <p>Most operations run in constant time (ignoring time spent
  * blocking).  Exceptions include {@link #remove(Object) remove},
@@ -42,17 +41,14 @@ import java.util.concurrent.locks.Condition;
  * #removeLastOccurrence removeLastOccurrence}, {@link #contains
  * contains}, {@link #iterator iterator.remove()}, and the bulk
  * operations, all of which run in linear time.
- * </p>
  *
  * <p>This class and its iterator implement all of the
  * <em>optional</em> methods of the {@link Collection} and {@link
  * Iterator} interfaces.
- * </p>
  *
  * <p>This class is a member of the
  * <a href="{@docRoot}/../technotes/guides/collections/index.html">
  * Java Collections Framework</a>.
- * </p>
  *
  * @param <E> the type of elements held in this collection
  *
@@ -92,11 +88,7 @@ class LinkedBlockingDeque<E> extends AbstractQueue<E>
 
     private static final long serialVersionUID = -387911632671998426L;
 
-    /**
-     * Doubly-linked list node class.
-     *
-     * @param <E> node item type
-     */
+    /** Doubly-linked list node class */
     private static final class Node<E> {
         /**
          * The item, or null if this node has been removed.
@@ -905,7 +897,7 @@ class LinkedBlockingDeque<E> extends AbstractQueue<E>
     }
 
     /**
-     * Drains the queue to the specified collection.
+     * Empty the queue to the specified collection.
      *
      * @param c The collection to add the elements to
      *
@@ -924,7 +916,7 @@ class LinkedBlockingDeque<E> extends AbstractQueue<E>
     }
 
     /**
-     * Drains no more than the specified number of elements from the queue to the
+     * Empty no more than the specified number of elements from the queue to the
      * specified collection.
      *
      * @param c           collection to add the elements to
@@ -1334,7 +1326,7 @@ class LinkedBlockingDeque<E> extends AbstractQueue<E>
     }
 
     /**
-     * Saves the state of this deque to a stream (that is, serialize it).
+     * Save the state of this deque to a stream (that is, serialize it).
      *
      * @serialData The capacity (int), followed by elements (each an
      * {@code Object}) in the proper order, followed by a null
@@ -1358,7 +1350,7 @@ class LinkedBlockingDeque<E> extends AbstractQueue<E>
     }
 
     /**
-     * Reconstitutes this deque from a stream (that is,
+     * Reconstitute this deque from a stream (that is,
      * deserialize it).
      * @param s the stream
      */
@@ -1383,7 +1375,8 @@ class LinkedBlockingDeque<E> extends AbstractQueue<E>
     // Monitoring methods
 
     /**
-     * Returns true if there are threads waiting to take instances from this deque. See disclaimer on accuracy in
+     * Returns true if there are threads waiting to take instances from this deque.
+     * See disclaimer on accuracy in
      * {@link java.util.concurrent.locks.ReentrantLock#hasWaiters(Condition)}.
      *
      * @return true if there is at least one thread waiting on this deque's notEmpty condition.
@@ -1398,8 +1391,9 @@ class LinkedBlockingDeque<E> extends AbstractQueue<E>
     }
 
     /**
-     * Returns the length of the queue of threads waiting to take instances from this deque. See disclaimer on accuracy
-     * in {@link java.util.concurrent.locks.ReentrantLock#getWaitQueueLength(Condition)}.
+     * Returns the length of the queue of threads waiting to take instances from this deque.
+     * See disclaimer on accuracy in
+     * {@link java.util.concurrent.locks.ReentrantLock#getWaitQueueLength(Condition)}.
      *
      * @return number of threads waiting on this deque's notEmpty condition.
      */
@@ -1413,7 +1407,8 @@ class LinkedBlockingDeque<E> extends AbstractQueue<E>
     }
 
     /**
-     * Interrupts the threads currently waiting to take an object from the pool. See disclaimer on accuracy in
+     * Interrupts the threads currently waiting to take an object from the pool.
+     * See disclaimer on accuracy in
      * {@link java.util.concurrent.locks.ReentrantLock#getWaitingThreads(Condition)}.
      */
     public void interuptTakeWaiters() {

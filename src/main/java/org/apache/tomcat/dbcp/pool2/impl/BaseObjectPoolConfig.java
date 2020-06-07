@@ -24,12 +24,10 @@ import org.apache.tomcat.dbcp.pool2.BaseObject;
  * defined by the public constants.
  * <p>
  * This class is not thread-safe.
- * </p>
  *
- * @param <T> Type of element pooled.
  * @since 2.0
  */
-public abstract class BaseObjectPoolConfig<T> extends BaseObject implements Cloneable {
+public abstract class BaseObjectPoolConfig extends BaseObject implements Cloneable {
 
     /**
      * The default value for the {@code lifo} configuration attribute.
@@ -68,15 +66,6 @@ public abstract class BaseObjectPoolConfig<T> extends BaseObject implements Clon
      * @see GenericKeyedObjectPool#getSoftMinEvictableIdleTimeMillis()
      */
     public static final long DEFAULT_SOFT_MIN_EVICTABLE_IDLE_TIME_MILLIS = -1;
-
-    /**
-     * The default value for {@code evictorShutdownTimeoutMillis} configuration
-     * attribute.
-     * @see GenericObjectPool#getEvictorShutdownTimeoutMillis()
-     * @see GenericKeyedObjectPool#getEvictorShutdownTimeoutMillis()
-     */
-    public static final long DEFAULT_EVICTOR_SHUTDOWN_TIMEOUT_MILLIS =
-            10L * 1000L;
 
     /**
      * The default value for the {@code numTestsPerEvictionRun} configuration
@@ -161,7 +150,9 @@ public abstract class BaseObjectPoolConfig<T> extends BaseObject implements Clon
      * @see GenericObjectPool#getEvictionPolicyClassName()
      * @see GenericKeyedObjectPool#getEvictionPolicyClassName()
      */
-    public static final String DEFAULT_EVICTION_POLICY_CLASS_NAME = DefaultEvictionPolicy.class.getName();
+    public static final String DEFAULT_EVICTION_POLICY_CLASS_NAME =
+            "org.apache.tomcat.dbcp.pool2.impl.DefaultEvictionPolicy";
+
 
     private boolean lifo = DEFAULT_LIFO;
 
@@ -170,18 +161,13 @@ public abstract class BaseObjectPoolConfig<T> extends BaseObject implements Clon
     private long maxWaitMillis = DEFAULT_MAX_WAIT_MILLIS;
 
     private long minEvictableIdleTimeMillis =
-            DEFAULT_MIN_EVICTABLE_IDLE_TIME_MILLIS;
-
-    private long evictorShutdownTimeoutMillis =
-            DEFAULT_EVICTOR_SHUTDOWN_TIMEOUT_MILLIS;
+        DEFAULT_MIN_EVICTABLE_IDLE_TIME_MILLIS;
 
     private long softMinEvictableIdleTimeMillis =
-            DEFAULT_SOFT_MIN_EVICTABLE_IDLE_TIME_MILLIS;
+            DEFAULT_MIN_EVICTABLE_IDLE_TIME_MILLIS;
 
     private int numTestsPerEvictionRun =
-            DEFAULT_NUM_TESTS_PER_EVICTION_RUN;
-
-    private EvictionPolicy<T> evictionPolicy = null; // Only 2.6.0 applications set this
+        DEFAULT_NUM_TESTS_PER_EVICTION_RUN;
 
     private String evictionPolicyClassName = DEFAULT_EVICTION_POLICY_CLASS_NAME;
 
@@ -194,7 +180,7 @@ public abstract class BaseObjectPoolConfig<T> extends BaseObject implements Clon
     private boolean testWhileIdle = DEFAULT_TEST_WHILE_IDLE;
 
     private long timeBetweenEvictionRunsMillis =
-            DEFAULT_TIME_BETWEEN_EVICTION_RUNS_MILLIS;
+        DEFAULT_TIME_BETWEEN_EVICTION_RUNS_MILLIS;
 
     private boolean blockWhenExhausted = DEFAULT_BLOCK_WHEN_EXHAUSTED;
 
@@ -379,36 +365,6 @@ public abstract class BaseObjectPoolConfig<T> extends BaseObject implements Clon
     }
 
     /**
-     * Get the value for the {@code evictorShutdownTimeoutMillis} configuration
-     * attribute for pools created with this configuration instance.
-     *
-     * @return  The current setting of {@code evictorShutdownTimeoutMillis} for
-     *          this configuration instance
-     *
-     * @see GenericObjectPool#getEvictorShutdownTimeoutMillis()
-     * @see GenericKeyedObjectPool#getEvictorShutdownTimeoutMillis()
-     */
-    public long getEvictorShutdownTimeoutMillis() {
-        return evictorShutdownTimeoutMillis;
-    }
-
-    /**
-     * Set the value for the {@code evictorShutdownTimeoutMillis} configuration
-     * attribute for pools created with this configuration instance.
-     *
-     * @param evictorShutdownTimeoutMillis The new setting of
-     *        {@code evictorShutdownTimeoutMillis} for this configuration
-     *        instance
-     *
-     * @see GenericObjectPool#getEvictorShutdownTimeoutMillis()
-     * @see GenericKeyedObjectPool#getEvictorShutdownTimeoutMillis()
-     */
-    public void setEvictorShutdownTimeoutMillis(
-            final long evictorShutdownTimeoutMillis) {
-        this.evictorShutdownTimeoutMillis = evictorShutdownTimeoutMillis;
-    }
-
-    /**
      * Get the value for the {@code testOnCreate} configuration attribute for
      * pools created with this configuration instance.
      *
@@ -555,21 +511,6 @@ public abstract class BaseObjectPoolConfig<T> extends BaseObject implements Clon
     }
 
     /**
-     * Get the value for the {@code evictionPolicyClass} configuration
-     * attribute for pools created with this configuration instance.
-     *
-     * @return  The current setting of {@code evictionPolicyClass} for this
-     *          configuration instance
-     *
-     * @see GenericObjectPool#getEvictionPolicy()
-     * @see GenericKeyedObjectPool#getEvictionPolicy()
-     * @since 2.6.0
-     */
-    public EvictionPolicy<T> getEvictionPolicy() {
-        return evictionPolicy;
-    }
-
-    /**
      * Get the value for the {@code evictionPolicyClassName} configuration
      * attribute for pools created with this configuration instance.
      *
@@ -581,21 +522,6 @@ public abstract class BaseObjectPoolConfig<T> extends BaseObject implements Clon
      */
     public String getEvictionPolicyClassName() {
         return evictionPolicyClassName;
-    }
-
-    /**
-     * Set the value for the {@code evictionPolicyClass} configuration
-     * attribute for pools created with this configuration instance.
-     *
-     * @param evictionPolicy The new setting of
-     *        {@code evictionPolicyClass} for this configuration instance
-     *
-     * @see GenericObjectPool#getEvictionPolicy()
-     * @see GenericKeyedObjectPool#getEvictionPolicy()
-     * @since 2.6.0
-     */
-    public void setEvictionPolicy(final EvictionPolicy<T> evictionPolicy) {
-        this.evictionPolicy = evictionPolicy;
     }
 
     /**

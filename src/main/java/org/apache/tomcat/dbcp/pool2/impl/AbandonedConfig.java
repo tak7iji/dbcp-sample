@@ -168,43 +168,6 @@ public class AbandonedConfig {
     }
 
     /**
-     * Determines whether or not to log full stack traces when logAbandoned is true.
-     * If disabled, then a faster method for logging stack traces with only class data
-     * may be used if possible.
-     *
-     * @since 2.5
-     */
-    private boolean requireFullStackTrace = true;
-
-    /**
-     * Indicates if full stack traces are required when {@link #getLogAbandoned() logAbandoned}
-     * is true. Defaults to true. Logging of abandoned objects requiring a full stack trace will
-     * generate an entire stack trace to generate for every object created. If this is disabled,
-     * a faster but less informative stack walking mechanism may be used if available.
-     *
-     * @return true if full stack traces are required for logging abandoned connections, or false
-     * if abbreviated stack traces are acceptable
-     * @see CallStack
-     * @since 2.5
-     */
-    public boolean getRequireFullStackTrace() {
-        return requireFullStackTrace;
-    }
-
-    /**
-     * Sets the flag to require full stack traces for logging abandoned connections when enabled.
-     *
-     * @param requireFullStackTrace indicates whether or not full stack traces are required in
-     *                              abandoned connection logs
-     * @see CallStack
-     * @see #getRequireFullStackTrace()
-     * @since 2.5
-     */
-    public void setRequireFullStackTrace(final boolean requireFullStackTrace) {
-        this.requireFullStackTrace = requireFullStackTrace;
-    }
-
-    /**
      * PrintWriter to use to log information on abandoned objects.
      * Use of default system encoding is deliberate.
      */
@@ -232,10 +195,9 @@ public class AbandonedConfig {
     }
 
     /**
-     * If the pool implements
-     * {@link org.apache.tomcat.dbcp.pool2.UsageTracking}, should the pool
-     * record a stack trace every time a method is called on a pooled object and
-     * retain the most recent stack trace to aid debugging of abandoned objects?
+     * If the pool implements {@link UsageTracking}, should the pool record a
+     * stack trace every time a method is called on a pooled object and retain
+     * the most recent stack trace to aid debugging of abandoned objects?
      */
     private boolean useUsageTracking = false;
 

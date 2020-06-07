@@ -24,7 +24,6 @@ import java.util.Deque;
  * state, for the pooled objects.
  * <p>
  * Implementations of this class are required to be thread-safe.
- * </p>
  *
  * @param <T> the type of object in the pool
  *
@@ -33,7 +32,7 @@ import java.util.Deque;
 public interface PooledObject<T> extends Comparable<PooledObject<T>> {
 
     /**
-     * Obtains the underlying object that is wrapped by this instance of
+     * Obtain the underlying object that is wrapped by this instance of
      * {@link PooledObject}.
      *
      * @return The wrapped object
@@ -41,7 +40,7 @@ public interface PooledObject<T> extends Comparable<PooledObject<T>> {
     T getObject();
 
     /**
-     * Obtains the time (using the same basis as
+     * Obtain the time (using the same basis as
      * {@link System#currentTimeMillis()}) that this object was created.
      *
      * @return The creation time for the wrapped object
@@ -49,7 +48,7 @@ public interface PooledObject<T> extends Comparable<PooledObject<T>> {
     long getCreateTime();
 
     /**
-     * Obtains the time in milliseconds that this object last spent in the
+     * Obtain the time in milliseconds that this object last spent in the the
      * active state (it may still be active in which case subsequent calls will
      * return an increased value).
      *
@@ -58,17 +57,7 @@ public interface PooledObject<T> extends Comparable<PooledObject<T>> {
     long getActiveTimeMillis();
 
     /**
-     * Gets the number of times this object has been borrowed.
-     *
-     * @return -1 by default for old implementations prior to release 2.7.0.
-     * @since 2.7.0
-     */
-    default long getBorrowedCount() {
-        return -1;
-    }
-
-    /**
-     * Obtains the time in milliseconds that this object last spend in the
+     * Obtain the time in milliseconds that this object last spend in the the
      * idle state (it may still be idle in which case subsequent calls will
      * return an increased value).
      *
@@ -77,21 +66,21 @@ public interface PooledObject<T> extends Comparable<PooledObject<T>> {
     long getIdleTimeMillis();
 
     /**
-     * Obtains the time the wrapped object was last borrowed.
+     * Obtain the time the wrapped object was last borrowed.
      *
      * @return The time the object was last borrowed
      */
     long getLastBorrowTime();
 
     /**
-     * Obtains the time the wrapped object was last returned.
+     * Obtain the time the wrapped object was last returned.
      *
      * @return The time the object was last returned
      */
     long getLastReturnTime();
 
     /**
-     * Returns an estimate of the last time this object was used.  If the class
+     * Return an estimate of the last time this object was used.  If the class
      * of the pooled object implements {@link TrackedUse}, what is returned is
      * the maximum of {@link TrackedUse#getLastUsed()} and
      * {@link #getLastBorrowTime()}; otherwise this method gives the same
@@ -107,10 +96,8 @@ public interface PooledObject<T> extends Comparable<PooledObject<T>> {
      *<p>
      * Note: This class has a natural ordering that is inconsistent with
      *       equals if distinct objects have the same identity hash code.
-     * </p>
      * <p>
      * {@inheritDoc}
-     * </p>
      */
     @Override
     int compareTo(PooledObject<T> other);
@@ -131,7 +118,7 @@ public interface PooledObject<T> extends Comparable<PooledObject<T>> {
     String toString();
 
     /**
-     * Attempts to place the pooled object in the
+     * Attempt to place the pooled object in the
      * {@link PooledObjectState#EVICTION} state.
      *
      * @return <code>true</code> if the object was placed in the
@@ -181,18 +168,6 @@ public interface PooledObject<T> extends Comparable<PooledObject<T>> {
     void setLogAbandoned(boolean logAbandoned);
 
     /**
-     * Configures the stack trace generation strategy based on whether or not fully detailed stack traces are required.
-     * When set to false, abandoned logs may only include caller class information rather than method names, line
-     * numbers, and other normal metadata available in a full stack trace.
-     *
-     * @param requireFullStackTrace the new configuration setting for abandoned object logging
-     * @since 2.7.0
-     */
-    default void setRequireFullStackTrace(final boolean requireFullStackTrace) {
-        // noop
-    }
-
-    /**
      * Record the current stack trace as the last time the object was used.
      */
     void use();
@@ -221,4 +196,11 @@ public interface PooledObject<T> extends Comparable<PooledObject<T>> {
      * Marks the object as returning to the pool.
      */
     void markReturning();
+
+    // TODO: Uncomment this for version 3 (can't add it to 2.x as it will break
+    //       API compatibility)
+    ///**
+    // * Get the number of times this object has been borrowed.
+    // */
+    //long getBorrowedCount();
 }

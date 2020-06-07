@@ -66,7 +66,6 @@ public abstract class BasePooledObjectFactory<T> extends BaseObject implements P
     @Override
     public void destroyObject(final PooledObject<T> p)
         throws Exception  {
-        // The default implementation is a no-op.
     }
 
     /**
@@ -88,7 +87,6 @@ public abstract class BasePooledObjectFactory<T> extends BaseObject implements P
      */
     @Override
     public void activateObject(final PooledObject<T> p) throws Exception {
-        // The default implementation is a no-op.
     }
 
     /**
@@ -99,6 +97,5 @@ public abstract class BasePooledObjectFactory<T> extends BaseObject implements P
     @Override
     public void passivateObject(final PooledObject<T> p)
         throws Exception {
-        // The default implementation is a no-op.
     }
 }

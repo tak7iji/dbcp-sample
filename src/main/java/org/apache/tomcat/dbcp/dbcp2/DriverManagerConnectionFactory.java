@@ -16,7 +16,6 @@
  */
 
 package org.apache.tomcat.dbcp.dbcp2;
-
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -25,6 +24,9 @@ import java.util.Properties;
 /**
  * A {@link DriverManager}-based implementation of {@link ConnectionFactory}.
  *
+ * @author Rodney Waldhoff
+ * @author Ignacio J. Ortega
+ * @author Dirk Verbeeck
  * @since 2.0
  */
 public class DriverManagerConnectionFactory implements ConnectionFactory {
@@ -38,112 +40,57 @@ public class DriverManagerConnectionFactory implements ConnectionFactory {
         DriverManager.getDrivers();
     }
 
-    private final String connectionUri;
-
-    private final String userName;
-
-    private final char[] userPassword;
-
-    private final Properties properties;
 
     /**
      * Constructor for DriverManagerConnectionFactory.
-     *
-     * @param connectionUri
-     *            a database url of the form <code> jdbc:<em>subprotocol</em>:<em>subname</em></code>
+     * @param connectUri a database url of the form
+     * <code> jdbc:<em>subprotocol</em>:<em>subname</em></code>
      * @since 2.2
      */
-    public DriverManagerConnectionFactory(final String connectionUri) {
-        this.connectionUri = connectionUri;
-        this.properties = new Properties();
-        this.userName = null;
-        this.userPassword = null;
+    public DriverManagerConnectionFactory(final String connectUri) {
+        _connectUri = connectUri;
+        _props = new Properties();
     }
 
     /**
      * Constructor for DriverManagerConnectionFactory.
-     *
-     * @param connectionUri
-     *            a database url of the form <code> jdbc:<em>subprotocol</em>:<em>subname</em></code>
-     * @param properties
-     *            a list of arbitrary string tag/value pairs as connection arguments; normally at least a "user" and
-     *            "password" property should be included.
+     * @param connectUri a database url of the form
+     * <code> jdbc:<em>subprotocol</em>:<em>subname</em></code>
+     * @param props a list of arbitrary string tag/value pairs as
+     * connection arguments; normally at least a "user" and "password"
+     * property should be included.
      */
-    public DriverManagerConnectionFactory(final String connectionUri, final Properties properties) {
-        this.connectionUri = connectionUri;
-        this.properties = properties;
-        this.userName = null;
-        this.userPassword = null;
+    public DriverManagerConnectionFactory(final String connectUri, final Properties props) {
+        _connectUri = connectUri;
+        _props = props;
     }
 
     /**
      * Constructor for DriverManagerConnectionFactory.
-     *
-     * @param connectionUri
-     *            a database url of the form <code>jdbc:<em>subprotocol</em>:<em>subname</em></code>
-     * @param userName
-     *            the database user
-     * @param userPassword
-     *            the user's password
+     * @param connectUri a database url of the form
+     * <code>jdbc:<em>subprotocol</em>:<em>subname</em></code>
+     * @param uname the database user
+     * @param passwd the user's password
      */
-    public DriverManagerConnectionFactory(final String connectionUri, final String userName,
-            final char[] userPassword) {
-        this.connectionUri = connectionUri;
-        this.userName = userName;
-        this.userPassword = Utils.clone(userPassword);
-        this.properties = null;
-    }
-
-    /**
-     * Constructor for DriverManagerConnectionFactory.
-     *
-     * @param connectionUri
-     *            a database url of the form <code>jdbc:<em>subprotocol</em>:<em>subname</em></code>
-     * @param userName
-     *            the database user
-     * @param userPassword
-     *            the user's password
-     */
-    public DriverManagerConnectionFactory(final String connectionUri, final String userName,
-            final String userPassword) {
-        this.connectionUri = connectionUri;
-        this.userName = userName;
-        this.userPassword =  Utils.toCharArray(userPassword);
-        this.properties = null;
+    public DriverManagerConnectionFactory(final String connectUri, final String uname, final String passwd) {
+        _connectUri = connectUri;
+        _uname = uname;
+        _passwd = passwd;
     }
 
     @Override
     public Connection createConnection() throws SQLException {
-        if (null == properties) {
-            if (userName == null && userPassword == null) {
-                return DriverManager.getConnection(connectionUri);
+        if(null == _props) {
+            if(_uname == null && _passwd == null) {
+                return DriverManager.getConnection(_connectUri);
             }
-            return DriverManager.getConnection(connectionUri, userName, Utils.toString(userPassword));
+            return DriverManager.getConnection(_connectUri,_uname,_passwd);
         }
-        return DriverManager.getConnection(connectionUri, properties);
+        return DriverManager.getConnection(_connectUri,_props);
     }
 
-    /**
-     * @return The connection URI.
-     * @since 2.6.0
-     */
-    public String getConnectionUri() {
-        return connectionUri;
-    }
-
-    /**
-     * @return The Properties.
-     * @since 2.6.0
-     */
-    public Properties getProperties() {
-        return properties;
-    }
-
-    /**
-     * @return The user name.
-     * @since 2.6.0
-     */
-    public String getUserName() {
-        return userName;
-    }
+    private String _connectUri = null;
+    private String _uname = null;
+    private String _passwd = null;
+    private Properties _props = null;
 }

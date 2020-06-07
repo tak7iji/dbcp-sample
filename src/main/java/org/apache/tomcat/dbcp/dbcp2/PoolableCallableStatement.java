@@ -21,14 +21,13 @@ import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.tomcat.dbcp.pool2.KeyedObjectPool;
 
 /**
- * A {@link DelegatingCallableStatement} that cooperates with {@link PoolingConnection} to implement a pool of
- * {@link CallableStatement}s.
+ * A {@link DelegatingCallableStatement} that cooperates with
+ * {@link PoolingConnection} to implement a pool of {@link CallableStatement}s.
  * <p>
  * The {@link #close} method returns this statement to its containing pool. (See {@link PoolingConnection}.)
  *
@@ -40,103 +39,89 @@ public class PoolableCallableStatement extends DelegatingCallableStatement {
     /**
      * The {@link KeyedObjectPool} from which this CallableStatement was obtained.
      */
-    private final KeyedObjectPool<PStmtKey, DelegatingPreparedStatement> pool;
+    private final KeyedObjectPool<PStmtKey,DelegatingPreparedStatement> _pool;
 
     /**
      * Key for this statement in the containing {@link KeyedObjectPool}.
      */
-    private final PStmtKey key;
+    private final PStmtKey _key;
 
     /**
      * Constructor.
      *
-     * @param callableStatement
-     *            the underlying {@link CallableStatement}
-     * @param key
-     *            the key for this statement in the {@link KeyedObjectPool}
-     * @param pool
-     *            the {@link KeyedObjectPool} from which this CallableStatement was obtained
-     * @param connection
-     *            the {@link DelegatingConnection} that created this CallableStatement
+     * @param stmt the underlying {@link CallableStatement}
+     * @param key the key for this statement in the {@link KeyedObjectPool}
+     * @param pool the {@link KeyedObjectPool} from which this CallableStatement was obtained
+     * @param conn the {@link DelegatingConnection} that created this CallableStatement
      */
-    public PoolableCallableStatement(final CallableStatement callableStatement, final PStmtKey key,
-            final KeyedObjectPool<PStmtKey, DelegatingPreparedStatement> pool,
-            final DelegatingConnection<Connection> connection) {
-        super(connection, callableStatement);
-        this.pool = pool;
-        this.key = key;
+    public PoolableCallableStatement(final CallableStatement stmt, final PStmtKey key,
+            final KeyedObjectPool<PStmtKey,DelegatingPreparedStatement> pool,
+            final DelegatingConnection<Connection> conn) {
+        super(conn, stmt);
+        _pool = pool;
+        _key = key;
 
         // Remove from trace now because this statement will be
         // added by the activate method.
-        removeThisTrace(getConnectionInternal());
+        if(getConnectionInternal() != null) {
+            getConnectionInternal().removeTrace(this);
+        }
     }
 
     /**
-     * Returns the CallableStatement to the pool. If {{@link #isClosed()}, this is a No-op.
+     * Returns the CallableStatement to the pool.  If {{@link #isClosed()}, this is a No-op.
      */
     @Override
     public void close() throws SQLException {
         // calling close twice should have no effect
         if (!isClosed()) {
             try {
-                pool.returnObject(key, this);
-            } catch (final SQLException e) {
+                _pool.returnObject(_key,this);
+            } catch(final SQLException e) {
                 throw e;
-            } catch (final RuntimeException e) {
+            } catch(final RuntimeException e) {
                 throw e;
-            } catch (final Exception e) {
+            } catch(final Exception e) {
                 throw new SQLException("Cannot close CallableStatement (return to pool failed)", e);
             }
         }
     }
 
     /**
-     * Activates after retrieval from the pool. Adds a trace for this CallableStatement to the Connection that created
-     * it.
-     *
-     * @since 2.4.0 made public, was protected in 2.3.0.
+     * Activates after retrieval from the pool. Adds a trace for this CallableStatement to the Connection
+     * that created it.
      */
     @Override
-    public void activate() throws SQLException {
+    protected void activate() throws SQLException {
         setClosedInternal(false);
-        if (getConnectionInternal() != null) {
-            getConnectionInternal().addTrace(this);
+        if( getConnectionInternal() != null ) {
+            getConnectionInternal().addTrace( this );
         }
         super.activate();
     }
 
     /**
-     * Passivates to prepare for return to the pool. Removes the trace associated with this CallableStatement from the
-     * Connection that created it. Also closes any associated ResultSets.
-     *
-     * @since 2.4.0 made public, was protected in 2.3.0.
+     * Passivates to prepare for return to the pool.  Removes the trace associated with this CallableStatement
+     * from the Connection that created it.  Also closes any associated ResultSets.
      */
     @Override
-    public void passivate() throws SQLException {
+    protected void passivate() throws SQLException {
         setClosedInternal(true);
-        removeThisTrace(getConnectionInternal());
+        if( getConnectionInternal() != null ) {
+            getConnectionInternal().removeTrace(this);
+        }
 
         // The JDBC spec requires that a statement close any open
         // ResultSet's when it is closed.
         // FIXME The PreparedStatement we're wrapping should handle this for us.
         // See DBCP-10 for what could happen when ResultSets are closed twice.
-        final List<AbandonedTrace> resultSetList = getTrace();
-        if (resultSetList != null) {
-            final List<Exception> thrownList = new ArrayList<>();
-            final ResultSet[] resultSets = resultSetList.toArray(new ResultSet[resultSetList.size()]);
-            for (final ResultSet resultSet : resultSets) {
-                if (resultSet != null) {
-                    try {
-                        resultSet.close();
-                    } catch (Exception e) {
-                        thrownList.add(e);
-                    }
-                }
+        final List<AbandonedTrace> resultSets = getTrace();
+        if(resultSets != null) {
+            final ResultSet[] set = resultSets.toArray(new ResultSet[resultSets.size()]);
+            for (final ResultSet element : set) {
+                element.close();
             }
             clearTrace();
-            if (!thrownList.isEmpty()) {
-                throw new SQLExceptionList(thrownList);
-            }
         }
 
         super.passivate();

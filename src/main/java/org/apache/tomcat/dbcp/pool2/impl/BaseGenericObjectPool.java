@@ -21,13 +21,10 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.lang.management.ManagementFactory;
 import java.lang.ref.WeakReference;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.TimerTask;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.management.InstanceAlreadyExistsException;
@@ -40,7 +37,6 @@ import javax.management.ObjectName;
 
 import org.apache.tomcat.dbcp.pool2.BaseObject;
 import org.apache.tomcat.dbcp.pool2.PooledObject;
-import org.apache.tomcat.dbcp.pool2.PooledObjectState;
 import org.apache.tomcat.dbcp.pool2.SwallowedExceptionListener;
 
 /**
@@ -62,8 +58,6 @@ public abstract class BaseGenericObjectPool<T> extends BaseObject {
      * so that rolling means may be calculated.
      */
     public static final int MEAN_TIMING_STATS_CACHE_SIZE = 100;
-
-    private static final String EVICTION_POLICY_TYPE_NAME = EvictionPolicy.class.getName();
 
     // Configuration attributes
     private volatile int maxTotal =
@@ -91,8 +85,6 @@ public abstract class BaseGenericObjectPool<T> extends BaseObject {
     private volatile long softMinEvictableIdleTimeMillis =
             BaseObjectPoolConfig.DEFAULT_SOFT_MIN_EVICTABLE_IDLE_TIME_MILLIS;
     private volatile EvictionPolicy<T> evictionPolicy;
-    private volatile long evictorShutdownTimeoutMillis =
-            BaseObjectPoolConfig.DEFAULT_EVICTOR_SHUTDOWN_TIMEOUT_MILLIS;
 
 
     // Internal (primarily state) attributes
@@ -111,7 +103,7 @@ public abstract class BaseGenericObjectPool<T> extends BaseObject {
 
 
     // Monitoring (primarily JMX) attributes
-    private final ObjectName objectName;
+    private final ObjectName oname;
     private final String creationStackTrace;
     private final AtomicLong borrowedCount = new AtomicLong(0);
     private final AtomicLong returnedCount = new AtomicLong(0);
@@ -135,12 +127,12 @@ public abstract class BaseGenericObjectPool<T> extends BaseObject {
      *                      overridden by the config
      * @param jmxNamePrefix Prefix to be used for JMX name for the new pool
      */
-    public BaseGenericObjectPool(final BaseObjectPoolConfig<T> config,
+    public BaseGenericObjectPool(final BaseObjectPoolConfig config,
             final String jmxNameBase, final String jmxNamePrefix) {
         if (config.getJmxEnabled()) {
-            this.objectName = jmxRegister(config, jmxNameBase, jmxNamePrefix);
+            this.oname = jmxRegister(config, jmxNameBase, jmxNamePrefix);
         } else {
-            this.objectName = null;
+            this.oname = null;
         }
 
         // Populate the creation stack trace
@@ -215,29 +207,6 @@ public abstract class BaseGenericObjectPool<T> extends BaseObject {
      */
     public final void setBlockWhenExhausted(final boolean blockWhenExhausted) {
         this.blockWhenExhausted = blockWhenExhausted;
-    }
-
-    protected void setConfig(final BaseObjectPoolConfig<T> conf) {
-        setLifo(conf.getLifo());
-        setMaxWaitMillis(conf.getMaxWaitMillis());
-        setBlockWhenExhausted(conf.getBlockWhenExhausted());
-        setTestOnCreate(conf.getTestOnCreate());
-        setTestOnBorrow(conf.getTestOnBorrow());
-        setTestOnReturn(conf.getTestOnReturn());
-        setTestWhileIdle(conf.getTestWhileIdle());
-        setNumTestsPerEvictionRun(conf.getNumTestsPerEvictionRun());
-        setMinEvictableIdleTimeMillis(conf.getMinEvictableIdleTimeMillis());
-        setTimeBetweenEvictionRunsMillis(conf.getTimeBetweenEvictionRunsMillis());
-        setSoftMinEvictableIdleTimeMillis(conf.getSoftMinEvictableIdleTimeMillis());
-        final EvictionPolicy<T> policy = conf.getEvictionPolicy();
-        if (policy == null) {
-            // Use the class name (pre-2.6.0 compatible)
-            setEvictionPolicyClassName(conf.getEvictionPolicyClassName());
-        } else {
-            // Otherwise, use the class (2.6.0 feature)
-            setEvictionPolicy(policy);
-        }
-        setEvictorShutdownTimeoutMillis(conf.getEvictorShutdownTimeoutMillis());
     }
 
     /**
@@ -474,11 +443,9 @@ public abstract class BaseGenericObjectPool<T> extends BaseObject {
     }
 
     /**
-     * Sets the number of milliseconds to sleep between runs of the idle object evictor thread.
-     * <ul>
-     * <li>When positive, the idle object evictor thread starts.</li>
-     * <li>When non-positive, no idle object evictor thread runs.</li>
-     * </ul>
+     * Sets the number of milliseconds to sleep between runs of the idle
+     * object evictor thread. When non-positive, no idle object evictor thread
+     * will be run.
      *
      * @param timeBetweenEvictionRunsMillis
      *            number of milliseconds to sleep between evictor runs
@@ -488,7 +455,6 @@ public abstract class BaseGenericObjectPool<T> extends BaseObject {
     public final void setTimeBetweenEvictionRunsMillis(
             final long timeBetweenEvictionRunsMillis) {
         this.timeBetweenEvictionRunsMillis = timeBetweenEvictionRunsMillis;
-        System.out.println("timeBetweenEvictionRunsMillis: "+timeBetweenEvictionRunsMillis);
         startEvictor(timeBetweenEvictionRunsMillis);
     }
 
@@ -619,100 +585,48 @@ public abstract class BaseGenericObjectPool<T> extends BaseObject {
     }
 
     /**
-     * Sets the eviction policy for this pool.
+     * Sets the name of the {@link EvictionPolicy} implementation that is
+     * used by this pool. The Pool will attempt to load the class using the
+     * thread context class loader. If that fails, the Pool will attempt to load
+     * the class using the class loader that loaded this class.
      *
-     * @param evictionPolicy
-     *            the eviction policy for this pool.
-     * @since 2.6.0
-     */
-    public void setEvictionPolicy(final EvictionPolicy<T> evictionPolicy) {
-        this.evictionPolicy = evictionPolicy;
-    }
-
-    /**
-     * Sets the name of the {@link EvictionPolicy} implementation that is used by this pool. The Pool will attempt to
-     * load the class using the given class loader. If that fails, use the class loader for the {@link EvictionPolicy}
-     * interface.
-     *
-     * @param evictionPolicyClassName
-     *            the fully qualified class name of the new eviction policy
-     * @param classLoader
-     *            the class loader to load the given {@code evictionPolicyClassName}.
+     * @param evictionPolicyClassName   the fully qualified class name of the
+     *                                  new eviction policy
      *
      * @see #getEvictionPolicyClassName()
-     * @since 2.6.0 If loading the class using the given class loader fails, use the class loader for the
-     *        {@link EvictionPolicy} interface.
      */
-    public final void setEvictionPolicyClassName(final String evictionPolicyClassName, final ClassLoader classLoader) {
-        // Getting epClass here and now best matches the caller's environment
-        final Class<?> epClass = EvictionPolicy.class;
-        final ClassLoader epClassLoader = epClass.getClassLoader();
+    public final void setEvictionPolicyClassName(
+            final String evictionPolicyClassName) {
         try {
+            Class<?> clazz;
             try {
-                setEvictionPolicy(evictionPolicyClassName, classLoader);
-            } catch (final ClassCastException | ClassNotFoundException e) {
-                setEvictionPolicy(evictionPolicyClassName, epClassLoader);
+                clazz = Class.forName(evictionPolicyClassName, true,
+                        Thread.currentThread().getContextClassLoader());
+            } catch (final ClassNotFoundException e) {
+                clazz = Class.forName(evictionPolicyClassName);
             }
-        } catch (final ClassCastException e) {
-            throw new IllegalArgumentException("Class " + evictionPolicyClassName + " from class loaders ["
-                    + classLoader + ", " + epClassLoader + "] do not implement " + EVICTION_POLICY_TYPE_NAME);
-        } catch (final ClassNotFoundException | InstantiationException | IllegalAccessException
-                | InvocationTargetException | NoSuchMethodException e) {
-            final String exMessage = "Unable to create " + EVICTION_POLICY_TYPE_NAME + " instance of type "
-                    + evictionPolicyClassName;
-            throw new IllegalArgumentException(exMessage, e);
+            final Object policy = clazz.newInstance();
+            if (policy instanceof EvictionPolicy<?>) {
+                @SuppressWarnings("unchecked") // safe, because we just checked the class
+                final
+                EvictionPolicy<T> evicPolicy = (EvictionPolicy<T>) policy;
+                this.evictionPolicy = evicPolicy;
+            }
+        } catch (final ClassNotFoundException e) {
+            throw new IllegalArgumentException(
+                    "Unable to create EvictionPolicy instance of type " +
+                    evictionPolicyClassName, e);
+        } catch (final InstantiationException e) {
+            throw new IllegalArgumentException(
+                    "Unable to create EvictionPolicy instance of type " +
+                    evictionPolicyClassName, e);
+        } catch (final IllegalAccessException e) {
+            throw new IllegalArgumentException(
+                    "Unable to create EvictionPolicy instance of type " +
+                    evictionPolicyClassName, e);
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private void setEvictionPolicy(final String className, final ClassLoader classLoader)
-            throws ClassNotFoundException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
-        final Class<?> clazz = Class.forName(className, true, classLoader);
-        final Object policy = clazz.getConstructor().newInstance();
-        this.evictionPolicy = (EvictionPolicy<T>) policy;
-    }
-
-    /**
-     * Sets the name of the {@link EvictionPolicy} implementation that is used by this pool. The Pool will attempt to
-     * load the class using the thread context class loader. If that fails, the use the class loader for the
-     * {@link EvictionPolicy} interface.
-     *
-     * @param evictionPolicyClassName
-     *            the fully qualified class name of the new eviction policy
-     *
-     * @see #getEvictionPolicyClassName()
-     * @since 2.6.0 If loading the class using the thread context class loader fails, use the class loader for the
-     *        {@link EvictionPolicy} interface.
-     */
-    public final void setEvictionPolicyClassName(final String evictionPolicyClassName) {
-        setEvictionPolicyClassName(evictionPolicyClassName, Thread.currentThread().getContextClassLoader());
-    }
-
-    /**
-     * Gets the timeout that will be used when waiting for the Evictor to
-     * shutdown if this pool is closed and it is the only pool still using the
-     * the value for the Evictor.
-     *
-     * @return  The timeout in milliseconds that will be used while waiting for
-     *          the Evictor to shut down.
-     */
-    public final long getEvictorShutdownTimeoutMillis() {
-        return evictorShutdownTimeoutMillis;
-    }
-
-    /**
-     * Sets the timeout that will be used when waiting for the Evictor to
-     * shutdown if this pool is closed and it is the only pool still using the
-     * the value for the Evictor.
-     *
-     * @param evictorShutdownTimeoutMillis  the timeout in milliseconds that
-     *                                      will be used while waiting for the
-     *                                      Evictor to shut down.
-     */
-    public final void setEvictorShutdownTimeoutMillis(
-            final long evictorShutdownTimeoutMillis) {
-        this.evictorShutdownTimeoutMillis = evictorShutdownTimeoutMillis;
-    }
 
     /**
      * Closes the pool, destroys the remaining idle objects and, if registered
@@ -745,9 +659,8 @@ public abstract class BaseGenericObjectPool<T> extends BaseObject {
      *
      * @return the eviction policy
      * @since 2.4
-     * @since 2.6.0 Changed access from protected to public.
      */
-    public EvictionPolicy<T> getEvictionPolicy() {
+    protected EvictionPolicy<T> getEvictionPolicy() {
         return evictionPolicy;
     }
 
@@ -773,9 +686,14 @@ public abstract class BaseGenericObjectPool<T> extends BaseObject {
      */
     final void startEvictor(final long delay) {
         synchronized (evictionLock) {
-            EvictionTimer.cancel(evictor, evictorShutdownTimeoutMillis, TimeUnit.MILLISECONDS);
-            evictor = null;
-            evictionIterator = null;
+            if (null != evictor) {
+                System.out.println(this.getClass().getName()+": evictor is not null.");
+                EvictionTimer.cancel(evictor);
+                evictor = null;
+                evictionIterator = null;
+            } else {
+                System.out.println(this.getClass().getName()+": evictor is null.");
+            }
             if (delay > 0) {
                 evictor = new Evictor();
                 EvictionTimer.schedule(evictor, delay, delay);
@@ -783,13 +701,6 @@ public abstract class BaseGenericObjectPool<T> extends BaseObject {
         }
     }
 
-    /**
-     * Stops the evictor.
-     */
-    void stopEvictor() {
-        System.out.println(this.getClass().getName()+"#stopEvictor");
-        startEvictor(-1L);
-    }
     /**
      * Tries to ensure that the configured minimum number of idle instances are
      * available in the pool.
@@ -807,7 +718,7 @@ public abstract class BaseGenericObjectPool<T> extends BaseObject {
      * @return the JMX name
      */
     public final ObjectName getJmxName() {
-        return objectName;
+        return oname;
     }
 
     /**
@@ -948,9 +859,9 @@ public abstract class BaseGenericObjectPool<T> extends BaseObject {
      * Swallows an exception and notifies the configured listener for swallowed
      * exceptions queue.
      *
-     * @param swallowException exception to be swallowed
+     * @param e exception to be swallowed
      */
-    final void swallowException(final Exception swallowException) {
+    final void swallowException(final Exception e) {
         final SwallowedExceptionListener listener = getSwallowedExceptionListener();
 
         if (listener == null) {
@@ -958,9 +869,11 @@ public abstract class BaseGenericObjectPool<T> extends BaseObject {
         }
 
         try {
-            listener.onSwallowException(swallowException);
-        } catch (final VirtualMachineError e) {
-            throw e;
+            listener.onSwallowException(e);
+        } catch (final OutOfMemoryError oome) {
+            throw oome;
+        } catch (final VirtualMachineError vme) {
+            throw vme;
         } catch (final Throwable t) {
             // Ignore. Enjoy the irony.
         }
@@ -997,29 +910,16 @@ public abstract class BaseGenericObjectPool<T> extends BaseObject {
     }
 
     /**
-     * Marks the object as returning to the pool.
-     * @param pooledObject instance to return to the keyed pool
-     */
-    protected void markReturningState(final PooledObject<T> pooledObject) {
-        synchronized(pooledObject) {
-            final PooledObjectState state = pooledObject.getState();
-            if (state != PooledObjectState.ALLOCATED) {
-                throw new IllegalStateException(
-                        "Object has already been returned to this pool or is invalid");
-            }
-            pooledObject.markReturning(); // Keep from being marked abandoned
-        }
-    }
-
-    /**
      * Unregisters this pool's MBean.
      */
     final void jmxUnregister() {
-        if (objectName != null) {
+        if (oname != null) {
             try {
                 ManagementFactory.getPlatformMBeanServer().unregisterMBean(
-                        objectName);
-            } catch (final MBeanRegistrationException | InstanceNotFoundException e) {
+                        oname);
+            } catch (final MBeanRegistrationException e) {
+                swallowException(e);
+            } catch (final InstanceNotFoundException e) {
                 swallowException(e);
             }
         }
@@ -1038,9 +938,9 @@ public abstract class BaseGenericObjectPool<T> extends BaseObject {
      * @param jmxNamePrefix name prefix
      * @return registered ObjectName, null if registration fails
      */
-    private ObjectName jmxRegister(final BaseObjectPoolConfig<T> config,
+    private ObjectName jmxRegister(final BaseObjectPoolConfig config,
             final String jmxNameBase, String jmxNamePrefix) {
-        ObjectName newObjectName = null;
+        ObjectName objectName = null;
         final MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
         int i = 1;
         boolean registered = false;
@@ -1059,7 +959,7 @@ public abstract class BaseGenericObjectPool<T> extends BaseObject {
                     objName = new ObjectName(base + jmxNamePrefix + i);
                 }
                 mbs.registerMBean(this, objName);
-                newObjectName = objName;
+                objectName = objName;
                 registered = true;
             } catch (final MalformedObjectNameException e) {
                 if (BaseObjectPoolConfig.DEFAULT_JMX_NAME_PREFIX.equals(
@@ -1075,12 +975,15 @@ public abstract class BaseGenericObjectPool<T> extends BaseObject {
             } catch (final InstanceAlreadyExistsException e) {
                 // Increment the index and try again
                 i++;
-            } catch (final MBeanRegistrationException | NotCompliantMBeanException e) {
+            } catch (final MBeanRegistrationException e) {
+                // Shouldn't happen. Skip registration if it does.
+                registered = true;
+            } catch (final NotCompliantMBeanException e) {
                 // Shouldn't happen. Skip registration if it does.
                 registered = true;
             }
         }
-        return newObjectName;
+        return objectName;
     }
 
     /**
@@ -1105,10 +1008,7 @@ public abstract class BaseGenericObjectPool<T> extends BaseObject {
      *
      * @see GenericKeyedObjectPool#setTimeBetweenEvictionRunsMillis
      */
-    class Evictor implements Runnable {
-
-        private ScheduledFuture<?> scheduledFuture;
-
+    class Evictor extends TimerTask {
         /**
          * Run pool maintenance.  Evict objects qualifying for eviction and then
          * ensure that the minimum number of idle instances are available.
@@ -1155,16 +1055,6 @@ public abstract class BaseGenericObjectPool<T> extends BaseObject {
                 // Restore the previous CCL
                 Thread.currentThread().setContextClassLoader(savedClassLoader);
             }
-        }
-
-
-        void setScheduledFuture(final ScheduledFuture<?> scheduledFuture) {
-            this.scheduledFuture = scheduledFuture;
-        }
-
-
-        void cancel() {
-            scheduledFuture.cancel(false);
         }
     }
 
@@ -1382,7 +1272,7 @@ public abstract class BaseGenericObjectPool<T> extends BaseObject {
         builder.append(", factoryClassLoader=");
         builder.append(factoryClassLoader);
         builder.append(", oname=");
-        builder.append(objectName);
+        builder.append(oname);
         builder.append(", creationStackTrace=");
         builder.append(creationStackTrace);
         builder.append(", borrowedCount=");
@@ -1408,6 +1298,5 @@ public abstract class BaseGenericObjectPool<T> extends BaseObject {
         builder.append(", swallowedExceptionListener=");
         builder.append(swallowedExceptionListener);
     }
-
 
 }

@@ -93,7 +93,11 @@ public class DefaultPooledObjectInfo implements DefaultPooledObjectInfoMBean {
 
     @Override
     public long getBorrowedCount() {
-        return pooledObject.getBorrowedCount();
+        // TODO Simplify this once getBorrowedCount has been added to PooledObject
+        if (pooledObject instanceof DefaultPooledObject) {
+            return ((DefaultPooledObject<?>) pooledObject).getBorrowedCount();
+        }
+        return -1;
     }
 
     /**

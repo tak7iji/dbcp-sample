@@ -22,7 +22,6 @@ package org.apache.tomcat.dbcp.pool2;
  * @since 2.0
  */
 public enum PooledObjectState {
-
     /**
      * In the queue, not in use.
      */

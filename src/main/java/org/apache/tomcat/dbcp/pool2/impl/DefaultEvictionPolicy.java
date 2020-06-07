@@ -31,9 +31,7 @@ import org.apache.tomcat.dbcp.pool2.PooledObject;
  *     {@link GenericObjectPool#getSoftMinEvictableIdleTimeMillis()} /
  *     {@link GenericKeyedObjectPool#getSoftMinEvictableIdleTimeMillis()}
  * </ul>
- * <p>
  * This class is immutable and thread-safe.
- * </p>
  *
  * @param <T> the type of objects in the pool
  *

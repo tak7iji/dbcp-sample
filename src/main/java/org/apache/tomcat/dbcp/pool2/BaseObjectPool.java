@@ -22,7 +22,6 @@ package org.apache.tomcat.dbcp.pool2;
  * indicating it is unsupported or throw {@link UnsupportedOperationException}.
  * <p>
  * This class is intended to be thread-safe.
- * </p>
  *
  * @param <T> Type of element pooled in this pool.
  *
@@ -87,7 +86,6 @@ public abstract class BaseObjectPool<T> extends BaseObject implements ObjectPool
      * <p>
      * This affects the behavior of <code>isClosed</code> and
      * <code>assertOpen</code>.
-     * </p>
      */
     @Override
     public void close() {

@@ -26,7 +26,6 @@ import java.util.concurrent.locks.ReentrantLock;
  * class is intended for internal use only.
  * <p>
  * This class is intended to be thread-safe.
- * </p>
  *
  * @since 2.0
  */

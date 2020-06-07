@@ -16,7 +16,6 @@
  */
 package org.apache.tomcat.dbcp.pool2.impl;
 
-import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;
 import java.util.ArrayList;
@@ -32,7 +31,6 @@ import org.apache.tomcat.dbcp.pool2.PooledObjectFactory;
  * {@link org.apache.tomcat.dbcp.pool2.ObjectPool}.
  * <p>
  * This class is intended to be thread-safe.
- * </p>
  *
  * @param <T>
  *            Type of element pooled in this pool.
@@ -79,7 +77,7 @@ public class SoftReferenceObjectPool<T> extends BaseObjectPool<T> {
     }
 
     /**
-     * Borrows an object from the pool. If there are no idle instances available
+     * Borrow an object from the pool. If there are no idle instances available
      * in the pool, the configured factory's
      * {@link PooledObjectFactory#makeObject()} method is invoked to create a
      * new instance.
@@ -186,8 +184,6 @@ public class SoftReferenceObjectPool<T> extends BaseObjectPool<T> {
      *
      * @param obj
      *            instance to return to the pool
-     * @throws IllegalArgumentException
-     *            if obj is not currently part of this pool
      */
     @Override
     public synchronized void returnObject(final T obj) throws Exception {
@@ -246,7 +242,7 @@ public class SoftReferenceObjectPool<T> extends BaseObjectPool<T> {
     }
 
     /**
-     * Creates an object, and places it into the pool. addObject() is useful for
+     * Create an object, and place it into the pool. addObject() is useful for
      * "pre-loading" a pool with idle objects.
      * <p>
      * Before being added to the pool, the newly created instance is
@@ -316,7 +312,7 @@ public class SoftReferenceObjectPool<T> extends BaseObjectPool<T> {
     }
 
     /**
-     * Returns the number of instances currently borrowed from this pool.
+     * Return the number of instances currently borrowed from this pool.
      *
      * @return the number of instances currently borrowed from this pool
      */
@@ -348,7 +344,7 @@ public class SoftReferenceObjectPool<T> extends BaseObjectPool<T> {
     }
 
     /**
-     * Closes this pool, and frees any resources associated with it. Invokes
+     * Close this pool, and free any resources associated with it. Invokes
      * {@link #clear()} to destroy and remove instances in the pool.
      * <p>
      * Calling {@link #addObject} or {@link #borrowObject} after invoking this
@@ -379,13 +375,11 @@ public class SoftReferenceObjectPool<T> extends BaseObjectPool<T> {
         // Remove wrappers for enqueued references from idle and allReferences lists
         removeClearedReferences(idleReferences.iterator());
         removeClearedReferences(allReferences.iterator());
-        while (refQueue.poll() != null) {
-            // empty
-        }
+        while (refQueue.poll() != null) {}
     }
 
     /**
-     * Finds the PooledSoftReference in allReferences that points to obj.
+     * Find the PooledSoftReference in allReferences that points to obj.
      *
      * @param obj returning object
      * @return PooledSoftReference wrapping a soft reference to obj
@@ -402,7 +396,7 @@ public class SoftReferenceObjectPool<T> extends BaseObjectPool<T> {
     }
 
     /**
-     * Destroys a {@code PooledSoftReference} and removes it from the idle and all
+     * Destroy a {@code PooledSoftReference} and remove it from the idle and all
      * references pools.
      *
      * @param toDestroy PooledSoftReference to destroy

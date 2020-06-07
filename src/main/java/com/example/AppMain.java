@@ -28,7 +28,9 @@ public class AppMain {
         } catch(Exception e) {
             e.printStackTrace();
         } finally {
+            System.out.println("Test ended.");
             try { if (conn != null) conn.close(); } catch(Exception e) { }
+            System.out.println("Connection closed.");
         }
     }
 

@@ -95,6 +95,7 @@ class EvictionTimer {
      */
     static synchronized void cancel(
             final BaseGenericObjectPool<?>.Evictor evictor, final long timeout, final TimeUnit unit) {
+        System.out.println("EvictionTimer evictor: "+evictor);
         if (evictor != null) {
             evictor.cancel();
         }

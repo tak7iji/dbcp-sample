@@ -84,8 +84,6 @@ import org.apache.tomcat.dbcp.pool2.PooledObjectState;
 public class GenericKeyedObjectPool<K, T> extends BaseGenericObjectPool<T>
         implements KeyedObjectPool<K, T>, GenericKeyedObjectPoolMXBean<K> {
 
-    private boolean useEvictor;
-
     /**
      * Create a new <code>GenericKeyedObjectPool</code> using defaults from
      * {@link GenericKeyedObjectPoolConfig}.
@@ -244,22 +242,11 @@ public class GenericKeyedObjectPool<K, T> extends BaseGenericObjectPool<T>
      * @see GenericKeyedObjectPoolConfig
      */
     public void setConfig(final GenericKeyedObjectPoolConfig<T> conf) {
-        setUseEvictor(conf.getUseEvictor());
-        if(getUseEvictor()) {
-            super.setConfig(conf);
-        } else {
-            setMaxWaitMillis(conf.getMaxWaitMillis());
-            setBlockWhenExhausted(conf.getBlockWhenExhausted());
-        }
-
+        super.setConfig(conf);
         setMaxIdlePerKey(conf.getMaxIdlePerKey());
         setMaxTotalPerKey(conf.getMaxTotalPerKey());
         setMaxTotal(conf.getMaxTotal());
         setMinIdlePerKey(conf.getMinIdlePerKey());
-    }
-
-    private void setUseEvictor(boolean useEvictor) {
-        this.useEvictor = useEvictor;
     }
 
     /**
@@ -688,18 +675,6 @@ public class GenericKeyedObjectPool<K, T> extends BaseGenericObjectPool<T>
     public int getNumIdle(final K key) {
         final ObjectDeque<T> objectDeque = poolMap.get(key);
         return objectDeque != null ? objectDeque.getIdleObjects().size() : 0;
-    }
-
-    @Override
-    void stopEvictor() {
-        if(getUseEvictor()) {
-            System.out.println("stopEvictor");
-            startEvictor(-1L);
-        }
-    }
-
-    private boolean getUseEvictor() {
-        return this.useEvictor;
     }
 
     /**

@@ -787,7 +787,7 @@ public abstract class BaseGenericObjectPool<T> extends BaseObject {
      * Stops the evictor.
      */
     void stopEvictor() {
-        System.out.println("stopEvictor");
+        System.out.println(this.getClass().getName()+"#stopEvictor");
         startEvictor(-1L);
     }
     /**

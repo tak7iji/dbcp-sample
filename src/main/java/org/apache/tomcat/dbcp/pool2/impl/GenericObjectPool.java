@@ -937,7 +937,7 @@ public class GenericObjectPool<T> extends BaseGenericObjectPool<T>
         idleObjects.remove(toDestroy);
         allObjects.remove(new IdentityWrapper<>(toDestroy.getObject()));
         try {
-            System.out.println("Factory: "+factory.getClass());
+            System.out.println(this.getClass().getName()+"#destroy: "+factory.getClass());
             factory.destroyObject(toDestroy);
         } finally {
             destroyedCount.incrementAndGet();

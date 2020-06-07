@@ -95,7 +95,7 @@ public class PoolingConnection extends DelegatingConnection<Connection>
      */
     @Override
     public synchronized void close() throws SQLException {
-        System.out.println("close");
+        System.out.println(this.getClass().getName()+"#close");
         try {
             if (null != pstmtPool) {
                 final KeyedObjectPool<PStmtKey, DelegatingPreparedStatement> oldpool = pstmtPool;

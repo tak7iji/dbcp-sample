@@ -222,7 +222,7 @@ public class DelegatingConnection<C extends Connection> extends AbandonedTrace i
         try {
             passivate();
         } finally {
-            System.out.println("Connection: "+connection.getClass());
+            System.out.println(this.getClass().getName()+"#closeInternal: "+connection.getClass());
             if (connection != null) {
                 boolean connectionIsClosed;
                 try {

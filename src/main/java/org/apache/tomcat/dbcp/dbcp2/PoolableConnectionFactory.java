@@ -134,7 +134,7 @@ public class PoolableConnectionFactory implements PooledObjectFactory<PoolableCo
 
     @Override
     public void destroyObject(final PooledObject<PoolableConnection> p) throws Exception {
-        System.out.println("PooledObject: "+p.getObject().getClass());
+        System.out.println(this.getClass().getName()+"#destroyObject: "+p.getObject().getClass());
         p.getObject().reallyClose();
     }
 
@@ -380,7 +380,6 @@ public class PoolableConnectionFactory implements PooledObjectFactory<PoolableCo
             config.setMaxWaitMillis(0);
             config.setMaxIdlePerKey(1);
             config.setMaxTotal(maxOpenPreparedStatements);
-            config.setUseEvictor(false);
             if (dataSourceJmxObjectName != null) {
                 final StringBuilder base = new StringBuilder(dataSourceJmxObjectName.toString());
                 base.append(Constants.JMX_CONNECTION_BASE_EXT);

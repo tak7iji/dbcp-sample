@@ -489,7 +489,14 @@ public abstract class BaseGenericObjectPool<T> extends BaseObject {
             final long timeBetweenEvictionRunsMillis) {
         this.timeBetweenEvictionRunsMillis = timeBetweenEvictionRunsMillis;
         System.out.println("timeBetweenEvictionRunsMillis: "+timeBetweenEvictionRunsMillis);
+        if(timeBetweenEvictionRunsMillis > 0) {
+            StackTraceElement[] ste = new Throwable().getStackTrace();
+            for (int i = 0; i < ste.length; i++) {
+                System.out.println(ste[i]);
+            }
+        }
         startEvictor(timeBetweenEvictionRunsMillis);
+        System.out.println("Evictor: "+evictor);
     }
 
     /**

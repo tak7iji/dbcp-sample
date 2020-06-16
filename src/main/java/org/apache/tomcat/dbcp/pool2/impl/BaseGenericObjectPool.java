@@ -496,7 +496,7 @@ public abstract class BaseGenericObjectPool<T> extends BaseObject {
             }
         }
         startEvictor(timeBetweenEvictionRunsMillis);
-        System.out.println("Evictor: "+evictor);
+        System.out.println("setTimeBetweenEvictionRunsMillis: Evictor: "+evictor);
     }
 
     /**
@@ -780,12 +780,15 @@ public abstract class BaseGenericObjectPool<T> extends BaseObject {
      */
     final void startEvictor(final long delay) {
         synchronized (evictionLock) {
-            System.out.println("Evictor: "+evictor);
+            System.out.println("startEvictor: Evictor: "+evictor);
             if(evictor != null) {
                 EvictionTimer.cancel(evictor, evictorShutdownTimeoutMillis, TimeUnit.MILLISECONDS);
+                evictor = null;
             }
-            evictor = null;
-            evictionIterator = null;
+            if(evictionIterator != null) {
+                System.out.println("evictionIterator: "+evictionIterator);
+                evictionIterator = null;
+            }
             if (delay > 0) {
                 evictor = new Evictor();
                 EvictionTimer.schedule(evictor, delay, delay);
